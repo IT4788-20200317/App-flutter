@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:quizz_app/HTTP/api.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -84,13 +85,34 @@ Future<void> getValueFromFirebase(
     };
     Local.email = providerValue.email.trim();
     var response = await requestHttp('login', 'POST', body: json.encode(data));
-    Map<String, dynamic> responseData = json.decode(response.body);
-    responseData.forEach((key, value) {
-      checkUserTypeAndNavigate(key, value, context);
-      ;
-    });
-
-    await getProfileInfo(profileProvider);
+    if (response.statusCode == 401) {
+      Fluttertoast.showToast(
+        msg: "Đăng nhập không thành công. Sai email hoặc mật khẩu.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      Navigator.pop(context);
+    }
+    if (response.statusCode == 200) {
+      Fluttertoast.showToast(
+        msg: "Đăng nhập thành công!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      Map<String, dynamic> responseData = json.decode(response.body);
+      responseData.forEach((key, value) {
+        checkUserTypeAndNavigate(key, value, context);
+      });
+      await getProfileInfo(profileProvider);
+    }
   } catch (e) {
     // Catch error display toast..........................
     Navigator.pop(context);
@@ -106,7 +128,6 @@ void checkUserTypeAndNavigate(key, value, context) {
 
     value == "0"
         ? {
-            print("@@@@@@@@@"),
             Navigator.pop(context), // If user is Student
             Navigator.pushReplacement(
                 context,
